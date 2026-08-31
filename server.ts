@@ -1,0 +1,204 @@
+import express, { Request, Response, NextFunction } from "express";
+import { createServer as createViteServer } from "vite";
+import path from "path";
+import cors from "cors";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import { db } from "./src/db/index.js";
+import { users, turmas, students, classifications, observations, forwardings } from "./src/db/schema.js";
+import { eq, and } from "drizzle-orm";
+
+const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key-for-local-dev";
+
+// Auth Middleware
+export interface AuthRequest extends Request {
+  user?: any;
+}
+const requireAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  const token = authHeader.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: "Invalid token" });
+  }
+};
+
+async function startServer() {
+  const app = express();
+  const PORT = 3000;
+
+  app.use(cors());
+  app.use(express.json());
+
+  // API Routes
+  app.post("/api/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      const userList = await db.select().from(users).where(eq(users.username, username));
+      const user = userList[0];
+      
+      if (!user) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const isMatch = await bcrypt.compare(password, user.passwordHash);
+      if (!isMatch) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: "1d" });
+      res.json({ token, user: { id: user.id, username: user.username, name: user.name } });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/data", requireAuth, async (req, res) => {
+    try {
+      const allTurmas = await db.select().from(turmas);
+      const allStudents = await db.select().from(students);
+      const allClassifications = await db.select().from(classifications);
+      const allObservations = await db.select().from(observations);
+      const allForwardings = await db.select().from(forwardings);
+
+      res.json({
+        turmas: allTurmas,
+        students: allStudents,
+        classifications: allClassifications,
+        observations: allObservations,
+        forwardings: allForwardings
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/turmas", requireAuth, async (req, res) => {
+    try {
+      const newTurma = await db.insert(turmas).values(req.body).returning();
+      res.json(newTurma[0]);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/turmas/:id", requireAuth, async (req, res) => {
+    try {
+      await db.delete(turmas).where(eq(turmas.id, parseInt(req.params.id)));
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/students", requireAuth, async (req, res) => {
+    try {
+      const newStudent = await db.insert(students).values(req.body).returning();
+      res.json(newStudent[0]);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/students/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await db.delete(classifications).where(eq(classifications.studentId, id));
+      await db.delete(observations).where(eq(observations.studentId, id));
+      await db.delete(forwardings).where(eq(forwardings.studentId, id));
+      await db.delete(students).where(eq(students.id, id));
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/students/:id/classifications", requireAuth, async (req, res) => {
+    try {
+      const studentId = parseInt(req.params.id);
+      const { classId } = req.body;
+      
+      const existing = await db.select().from(classifications).where(and(
+        eq(classifications.studentId, studentId),
+        eq(classifications.classId, classId)
+      ));
+
+      if (existing.length > 0) {
+        await db.delete(classifications).where(eq(classifications.id, existing[0].id));
+        res.json({ action: "removed", classId });
+      } else {
+        await db.insert(classifications).values({ studentId, classId });
+        res.json({ action: "added", classId });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/students/:id/observacoes", requireAuth, async (req, res) => {
+    try {
+      const studentId = parseInt(req.params.id);
+      const { texto } = req.body;
+      const obs = await db.insert(observations).values({ studentId, texto }).returning();
+      res.json(obs[0]);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/observacoes/:id", requireAuth, async (req, res) => {
+    try {
+      await db.delete(observations).where(eq(observations.id, parseInt(req.params.id)));
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/students/:id/encaminhamentos", requireAuth, async (req, res) => {
+    try {
+      const studentId = parseInt(req.params.id);
+      const { texto } = req.body;
+      const enc = await db.insert(forwardings).values({ studentId, texto }).returning();
+      res.json(enc[0]);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/encaminhamentos/:id", requireAuth, async (req, res) => {
+    try {
+      await db.delete(forwardings).where(eq(forwardings.id, parseInt(req.params.id)));
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Vite middleware for development
+  if (process.env.NODE_ENV !== "production") {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(process.cwd(), "dist");
+    app.use(express.static(distPath));
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    });
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
+  });
+}
+
+startServer();
