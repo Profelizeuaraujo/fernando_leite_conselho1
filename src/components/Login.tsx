@@ -17,14 +17,14 @@ export function Login({ onLogin }: LoginProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
       });
-      const data = await res.json();
-      if (res.ok) {
+      const data = await res.json().catch(() => null);
+      if (res.ok && data) {
         onLogin(data.token, data.user);
       } else {
-        setError(data.error || 'Erro no login');
+        setError(data?.error || `Erro (${res.status}): ${res.statusText || 'Falha ao processar'}`);
       }
-    } catch (err) {
-      setError('Falha de conexão com o servidor');
+    } catch (err: any) {
+      setError(`Falha de conexão com o servidor: ${err?.message || 'Sem resposta'}`);
     }
   };
 
