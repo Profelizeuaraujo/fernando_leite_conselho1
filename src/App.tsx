@@ -6,6 +6,7 @@ import { TurmaList } from './components/TurmaList';
 import { Alunos } from './components/Alunos';
 import { Relatorios } from './components/Relatorios';
 import { TurmasConfig } from './components/Turmas';
+import { Coordenadores } from './components/Coordenadores';
 import { Turma } from './types';
 
 export default function App() {
@@ -101,12 +102,40 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen w-full bg-slate-100 font-sans text-slate-800 overflow-hidden">
-      <aside className="w-64 bg-slate-900 flex flex-col border-r border-slate-800 shrink-0">
-        <div className="p-6 flex items-center gap-3 border-b border-slate-800">
-          <div className="h-8 w-8 bg-indigo-500 rounded-lg flex items-center justify-center font-bold text-white">E</div>
-          <span className="text-white font-semibold text-lg tracking-tight">EduConselho</span>
+    <div className="flex flex-col h-screen w-full bg-slate-100 font-sans text-slate-800 overflow-hidden">
+      {/* HEADER PRINCIPAL */}
+      <div className="w-full bg-[#113264] text-white px-6 py-3 flex items-center gap-5 shrink-0 z-20 shadow-md">
+        <div className="w-[76px] h-[76px] bg-white rounded-2xl shadow-sm flex flex-col items-center justify-center shrink-0 overflow-hidden border border-blue-800/30">
+          <div className="flex-1 flex items-center justify-center font-black tracking-tighter text-4xl mt-1.5">
+             <span className="text-red-600">F</span>
+             <span className="text-blue-600 -ml-1">L</span>
+             <span className="text-blue-500 -ml-1">C</span>
+          </div>
+          <div className="text-[5px] leading-[6px] text-center font-bold text-blue-900 pb-1 whitespace-nowrap">
+            E.E. PROF. FERNANDO<br/>LEITE DE CAMPOS
+          </div>
         </div>
+        <div className="flex flex-col justify-center">
+          <h1 className="text-[26px] leading-none font-extrabold tracking-wide uppercase flex items-center gap-3">
+             <span className="text-2xl drop-shadow-sm">🏫</span> CONSELHO DE CLASSE 2026
+          </h1>
+          <h2 className="text-[14px] font-bold tracking-wider uppercase mt-1.5 text-blue-100">
+            EE PROF. FERNANDO LEITE DE CAMPOS
+          </h2>
+          <p className="text-[13px] text-blue-200/90 mt-0.5 font-medium">
+            Sistema de Registro Pedagógico e Acompanhamento dos Estudantes durante o Conselho de Classe
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-1 overflow-hidden">
+        <aside className="w-64 bg-slate-900 flex flex-col border-r border-slate-800 shrink-0">
+          <div className="p-6 flex items-center gap-3 border-b border-slate-800">
+            <div className="h-8 w-8 bg-indigo-500 rounded-lg flex items-center justify-center font-bold text-white">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+            </div>
+            <span className="text-white font-semibold text-lg tracking-tight">Menu Principal</span>
+          </div>
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {[
             { id: 'dashboard', label: 'Dashboard' },
@@ -114,7 +143,8 @@ export default function App() {
             { id: 'medio', label: 'Ens. Médio' },
             { id: 'turmas', label: 'Turmas (Classes)' },
             { id: 'alunos', label: 'Alunos (Cadastro)' },
-            { id: 'relatorios', label: 'Relatórios' }
+            { id: 'relatorios', label: 'Relatórios' },
+            { id: 'coordenadores', label: 'Coordenadores' }
           ].map(t => {
             const isActive = activeTab === t.id;
             return (
@@ -209,6 +239,10 @@ export default function App() {
           {activeTab === 'turmas' && (
             <TurmasConfig 
               turmas={turmas}
+              students={students}
+              classifications={classifications}
+              observations={observations}
+              forwardings={forwardings}
               token={token}
               onDataChanged={fetchData}
             />
@@ -221,8 +255,15 @@ export default function App() {
               forwardings={forwardings} 
             />
           )}
+          {activeTab === 'coordenadores' && (
+            <Coordenadores 
+              token={token}
+              currentUser={user}
+            />
+          )}
         </div>
       </main>
+      </div>
 
       {promptModal.isOpen && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">

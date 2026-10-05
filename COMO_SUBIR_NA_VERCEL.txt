@@ -1,0 +1,95 @@
+GUIA RÁPIDO: DEPLOY NA VERCEL + BANCO DE DADOS GRATUITO (NEON)
+================================================================
+
+Subir na Vercel é a melhor decisão! Dessa forma:
+1. O sistema fica 24 horas no ar pela internet.
+2. Qualquer computador ou celular da escola (ou de casa) acessa direto pelo link.
+3. Não precisa deixar nenhum computador ligado como servidor.
+
+----------------------------------------------------------------
+PASSO 1: CRIAR O BANCO DE DADOS GRATUITO (Neon Postgres)
+----------------------------------------------------------------
+Como a Vercel fica na nuvem, ela precisa de um banco de dados na nuvem:
+1. Acesse: https://neon.tech
+2. Crie uma conta gratuita (pode entrar com o Google/GitHub).
+3. Crie um projeto chamado: "conselho"
+4. No painel do Neon, copie a sua "Connection String" (algo parecido com: postgresql://alex:abc123xyz@ep-plain-leaf-1234.us-east-2.aws.neon.tech/conselho?sslmode=require).
+
+----------------------------------------------------------------
+PASSO 2: CRIAR AS TABELAS NO BANCO NEON
+----------------------------------------------------------------
+1. No painel do Neon, clique na aba "SQL Editor" na lateral esquerda.
+2. Cole e execute (Run) o script abaixo para criar as tabelas e o usuário inicial:
+
+CREATE TABLE IF NOT EXISTS users (
+  id serial PRIMARY KEY,
+  username varchar(50) NOT NULL UNIQUE,
+  password_hash text NOT NULL,
+  name text NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS turmas (
+  id serial PRIMARY KEY,
+  nome varchar(100) NOT NULL UNIQUE,
+  modalidade varchar(50) NOT NULL,
+  turno varchar(50),
+  curso varchar(50),
+  serie varchar(50)
+);
+
+CREATE TABLE IF NOT EXISTS students (
+  id serial PRIMARY KEY,
+  cod varchar(20),
+  nome text NOT NULL,
+  paed boolean DEFAULT false NOT NULL,
+  turma varchar(50),
+  turno varchar(20),
+  serie varchar(50),
+  curso varchar(50),
+  modalidade varchar(20)
+);
+
+CREATE TABLE IF NOT EXISTS classifications (
+  id serial PRIMARY KEY,
+  student_id integer NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  class_id varchar(50) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS observacoes (
+  id serial PRIMARY KEY,
+  student_id integer NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  texto text NOT NULL,
+  created_at timestamp DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS encaminhamentos (
+  id serial PRIMARY KEY,
+  student_id integer NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  texto text NOT NULL,
+  created_at timestamp DEFAULT now()
+);
+
+-- Usuário inicial: GestaoFLC | Senha: FLC2026@
+INSERT INTO users (username, password_hash, name)
+VALUES ('GestaoFLC', '$2a$10$tZ27lI9tM/lH5t/hQ4jDyeQ.5lZ68E1wUjX5Jvj2QG2pZzWk1V2re', 'Gestão Escolar FLC')
+ON CONFLICT (username) DO NOTHING;
+
+----------------------------------------------------------------
+PASSO 3: SUBIR NA VERCEL
+----------------------------------------------------------------
+1. Acesse: https://vercel.com
+2. Conecte sua conta e importe este projeto (via GitHub ou Vercel CLI).
+3. Na tela de importação do projeto, vá em "Environment Variables" (Variáveis de Ambiente) e adicione:
+   - DATABASE_URL = (cole a URL completa que você copiou do Neon)
+   - JWT_SECRET = escola_flc_conselho_2026_segredo
+4. Clique em "Deploy".
+
+----------------------------------------------------------------
+PASSO 4: CRIAR O ÍCONE NA ÁREA DE TRABALHO DO WINDOWS
+----------------------------------------------------------------
+Para que os professores ou secretários cliquem em um ícone e abra direto:
+1. Vá até a Área de Trabalho do Windows.
+2. Clique com o botão direito em um espaço vazio ➔ Novo ➔ Atalho.
+3. No campo "Digite o local do item", cole o link do seu site na Vercel (ex: https://seu-app.vercel.app).
+4. Clique em "Avançar", coloque o nome "EduConselho FLC" e clique em "Concluir".
+5. Qualquer computador ou celular conectado na internet agora pode acessar esse mesmo link!

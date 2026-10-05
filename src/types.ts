@@ -1,3 +1,9 @@
+export interface User {
+  id: number;
+  username: string;
+  name: string;
+}
+
 export interface Turma {
   id: number;
   nome: string;

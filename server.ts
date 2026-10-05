@@ -59,6 +59,45 @@ async function startServer() {
     }
   });
 
+  app.get("/api/users", requireAuth, async (req, res) => {
+    try {
+      const allUsers = await db.select({ id: users.id, username: users.username, name: users.name }).from(users);
+      res.json(allUsers);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/users", requireAuth, async (req, res) => {
+    try {
+      const { username, password, name } = req.body;
+      const passwordHash = await bcrypt.hash(password, 10);
+      const newUser = await db.insert(users).values({ username, passwordHash, name }).returning({ id: users.id, username: users.username, name: users.name });
+      res.json(newUser[0]);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/users/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (req.user.id === id) {
+        return res.status(400).json({ error: "Não é possível excluir a própria conta." });
+      }
+      
+      const userToDelete = await db.select().from(users).where(eq(users.id, id));
+      if (userToDelete.length > 0 && userToDelete[0].username === 'GestaoFLC') {
+        return res.status(400).json({ error: "A conta principal de gestão (GestaoFLC) não pode ser excluída." });
+      }
+
+      await db.delete(users).where(eq(users.id, id));
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/data", requireAuth, async (req, res) => {
     try {
       const allTurmas = await db.select().from(turmas);

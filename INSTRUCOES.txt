@@ -1,0 +1,34 @@
+PASSO A PASSO PARA INSTALAR NA ESCOLA
+=====================================
+
+1. INSTALAR PRÉ-REQUISITOS (Baixe e instale no computador servidor):
+- Node.js (https://nodejs.org) -> Avance todas as telas deixando o padrão.
+- PostgreSQL (https://www.postgresql.org/download/windows/) -> Anote a senha que você criar durante a instalação!
+
+2. CONFIGURAR O BANCO DE DADOS:
+- Abra o "pgAdmin 4" (que instalou junto com o PostgreSQL)
+- Faça login com a senha que você criou
+- Clique com o botão direito em "Databases" -> Create -> Database
+- Nomeie como: conselho
+- Salve.
+
+3. CONFIGURAR AS SENHAS:
+- Na pasta deste projeto, crie um arquivo chamado exatamente ".env" (sem aspas)
+- Abra ele no Bloco de Notas e cole o seguinte, substituindo SUA_SENHA pela senha do PostgreSQL:
+
+SQL_HOST=localhost
+SQL_DB_NAME=conselho
+SQL_USER=postgres
+SQL_PASSWORD=SUA_SENHA
+SQL_ADMIN_USER=postgres
+SQL_ADMIN_PASSWORD=SUA_SENHA
+JWT_SECRET=escola123456segredo
+
+4. INSTALAR AUTOMATICAMENTE:
+- Dê um duplo clique no arquivo "instalar_windows.bat"
+- Aguarde todas as etapas (pode demorar alguns minutos)
+
+5. LIGAR O SISTEMA:
+- Dê um duplo clique no arquivo "iniciar_windows.bat"
+- Mantenha a tela preta aberta.
+- Acesse http://localhost:3000 no Chrome.

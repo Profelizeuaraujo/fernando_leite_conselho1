@@ -1,6 +1,8 @@
 import React from 'react';
 import { Student, Classification, Observation, Forwarding, CLASS_TYPES } from '../types';
 import { X, Printer, User, AlertCircle, BookOpen, GraduationCap, CheckCircle } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface StudentProfileModalProps {
   student: Student;
@@ -24,6 +26,93 @@ export function StudentProfileModal({ student, classifications, observations, fo
 
   const status = getStatusText();
 
+  const handleExportPDF = () => {
+    const doc = new jsPDF('portrait');
+    
+    // Configurações do título
+    doc.setFontSize(18);
+    doc.text('Ficha Individual do Aluno - Conselho de Classe', 14, 22);
+    
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+    doc.text('EE PROF. FERNANDO LEITE DE CAMPOS', 14, 30);
+    doc.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')}`, 14, 36);
+
+    // Dados do Aluno
+    autoTable(doc, {
+      startY: 45,
+      head: [['Dados Escolares', '']],
+      body: [
+        ['Nome Completo', student.nome],
+        ['RA / Código', student.cod || '-'],
+        ['Turma', student.turma],
+        ['Série / Curso', `${student.serie || '-'} - ${student.curso || '-'}`],
+        ['Turno', student.turno || '-'],
+        ['Status Final', status],
+      ],
+      theme: 'grid',
+      styles: { fontSize: 10, cellPadding: 3 },
+      headStyles: { fillColor: [17, 50, 100], textColor: [255, 255, 255] },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 40 } }
+    });
+
+    let currentY = (doc as any).lastAutoTable.finalY + 10;
+
+    // Classificações
+    const classList = studentClasses.map(sc => {
+      const classDef = CLASS_TYPES.find(c => c.id === sc.classId);
+      return classDef ? classDef.label : '';
+    }).filter(Boolean);
+
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Situação e Classificações (Perfil)']],
+      body: classList.length > 0 ? classList.map(c => [`• ${c}`]) : [['Nenhuma classificação registrada.']],
+      theme: 'grid',
+      styles: { fontSize: 10, cellPadding: 3 },
+      headStyles: { fillColor: [17, 50, 100], textColor: [255, 255, 255] }
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 10;
+
+    // Observações
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Observações Registradas']],
+      body: studentObs.length > 0 ? studentObs.map(o => [`• ${o.texto}`]) : [['Nenhuma observação registrada.']],
+      theme: 'grid',
+      styles: { fontSize: 10, cellPadding: 3 },
+      headStyles: { fillColor: [17, 50, 100], textColor: [255, 255, 255] }
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 10;
+
+    // Encaminhamentos
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Encaminhamentos']],
+      body: studentEnc.length > 0 ? studentEnc.map(e => [`• ${e.texto}`]) : [['Nenhum encaminhamento registrado.']],
+      theme: 'grid',
+      styles: { fontSize: 10, cellPadding: 3 },
+      headStyles: { fillColor: [17, 50, 100], textColor: [255, 255, 255] }
+    });
+    
+    currentY = (doc as any).lastAutoTable.finalY + 30;
+    
+    // Assinatura
+    if (currentY > 270) {
+      doc.addPage();
+      currentY = 40;
+    }
+    
+    doc.line(60, currentY, 150, currentY);
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text('Assinatura da Coordenação / Direção', 105, currentY + 5, { align: 'center' });
+
+    doc.save(`Ficha_${student.nome.replace(/\s+/g, '_')}.pdf`);
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50 print:bg-white print:p-0">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto print:shadow-none print:max-w-full print:max-h-full print:overflow-visible relative flex flex-col">
@@ -36,11 +125,11 @@ export function StudentProfileModal({ student, classifications, observations, fo
           </h2>
           <div className="flex gap-2">
             <button 
-              onClick={() => window.print()}
+              onClick={handleExportPDF}
               className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-sm font-medium transition"
             >
               <Printer className="w-4 h-4" />
-              Imprimir
+              Imprimir Ficha (PDF)
             </button>
             <button 
               onClick={onClose}
