@@ -1,5 +1,5 @@
-import { db } from './index.js';
-import { users, students } from './schema.js';
+import { db } from './index';
+import { users, students } from './schema';
 import bcrypt from 'bcryptjs';
 
 async function seed() {

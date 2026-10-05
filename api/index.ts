@@ -2,8 +2,8 @@ import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { db } from "../src/db/index.js";
-import { users, turmas, students, classifications, observations, forwardings } from "../src/db/schema.js";
+import { db } from "../src/db/index";
+import { users, turmas, students, classifications, observations, forwardings } from "../src/db/schema";
 import { eq, and } from "drizzle-orm";
 
 const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key-for-local-dev";
